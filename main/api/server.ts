@@ -1,10 +1,11 @@
 import { ipcMain } from "electron";
+import path from "path";
+import { networkInterfaces } from "os";
 import express, { Express } from "express";
 import { default as dotenv } from "dotenv";
 import cors from "cors";
 import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
-import { networkInterfaces } from "os";
 
 import { ServerInfo } from "../../shares/types";
 import { TOGGLE_EVENT_REQ, TOGGLE_EVENT_RES } from "../../shares/constants";
@@ -49,7 +50,11 @@ const addSwaggerToApp = (app: Express, port: string) => {
         url: `http://${address}:${port}`,
       })),
     },
-    apis: ["./main/api/questions.ts", "./main/api/schemas/*.ts"],
+    apis: [
+      path.join(process.resourcesPath, "main/api/questions.ts"),
+      path.join(process.resourcesPath, "main/api/schemas/*.ts"),
+    ],
+    // apis: ["./main/api/questions.ts", "./main/api/schemas/*.ts"],
   };
 
   const specs = swaggerJsdoc(options);
