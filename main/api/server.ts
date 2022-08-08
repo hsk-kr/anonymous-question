@@ -26,31 +26,36 @@ for (const value of Object.values(nets)) {
   }
 }
 
-const options = {
-  definition: {
-    openapi: "3.0.0",
-    info: {
-      title: "Anonymous Question API with Swagger",
-      version: "0.0.1",
-      description: "Anonymous Question API Server",
-      license: {
-        name: "MIT",
-        url: "https://spdx.org/licenses/MIT.html",
+/** Swagger */
+const addSwaggerToApp = (app: Express, port: string) => {
+  const options = {
+    definition: {
+      openapi: "3.0.0",
+      info: {
+        title: "Anonymous Question API with Swagger",
+        version: "0.0.1",
+        description: "Anonymous Question API Server",
+        license: {
+          name: "MIT",
+          url: "https://spdx.org/licenses/MIT.html",
+        },
+        contact: {
+          name: "lico",
+          url: "https://www.linkedin.com/in/seongkuk-han-49022419b/",
+          email: "hsk.coder@gmail.com",
+        },
       },
-      contact: {
-        name: "lico",
-        url: "https://www.linkedin.com/in/seongkuk-han-49022419b/",
-        email: "hsk.coder@gmail.com",
-      },
+      servers: addressList.map((address) => ({
+        url: `http://${address}:${port}`,
+      })),
     },
-    servers: addressList.map((address) => ({
-      url: `http://${address}:${process.env.SERVER_PORT}`,
-    })),
-  },
-  apis: ["./main/api/questions.ts", "./main/api/schemas/*.ts"],
-};
+    apis: ["./main/api/questions.ts", "./main/api/schemas/*.ts"],
+  };
 
-const specs = swaggerJsdoc(options);
+  const specs = swaggerJsdoc(options);
+
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
+};
 
 /** Events */
 
@@ -94,7 +99,6 @@ const configureServer = (app: Express) => {
   app.use(express.json());
   app.use(cors());
 
-  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
   app.use("/api", questionApi);
 };
 
@@ -109,6 +113,7 @@ export const startServer = (): Promise<string> => {
       .listen(undefined, () => {
         const port = (server.address() as { port: number }).port.toString();
         console.log(`Server has been started on ${port}.`);
+        addSwaggerToApp(app, port);
         resolve(port);
       })
       .on("error", (err) => {
