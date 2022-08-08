@@ -11,6 +11,7 @@ import { ServerInfo } from "../../shares/types";
 import { TOGGLE_EVENT_REQ, TOGGLE_EVENT_RES } from "../../shares/constants";
 import questionApi from "./questions";
 
+const isProd: boolean = process.env.NODE_ENV === "production";
 let serverInfo: ServerInfo | undefined;
 
 dotenv.config();
@@ -50,11 +51,12 @@ const addSwaggerToApp = (app: Express, port: string) => {
         url: `http://${address}:${port}`,
       })),
     },
-    apis: [
-      path.join(process.resourcesPath, "main/api/questions.ts"),
-      path.join(process.resourcesPath, "main/api/schemas/*.ts"),
-    ],
-    // apis: ["./main/api/questions.ts", "./main/api/schemas/*.ts"],
+    apis: isProd
+      ? [
+          path.join(process.resourcesPath, "main/api/questions.ts"),
+          path.join(process.resourcesPath, "main/api/schemas/*.ts"),
+        ]
+      : ["./main/api/questions.ts", "./main/api/schemas/*.ts"],
   };
 
   const specs = swaggerJsdoc(options);
