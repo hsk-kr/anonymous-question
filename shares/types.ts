@@ -6,3 +6,8 @@ export interface ServerInfo {
   app: Express;
   server: Server;
 }
+
+export interface Question {
+  nickname: string;
+  question: string;
+}

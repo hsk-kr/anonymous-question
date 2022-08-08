@@ -1,19 +1,53 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ipcRenderer } from "electron";
+import styled from "@emotion/styled";
 import Head from "next/head";
-import { Layout } from "antd";
 
-import { TOGGLE_EVENT_REQ, TOGGLE_EVENT_RES } from "../../types/constants";
+import {
+  SEND_QUESTION,
+  TOGGLE_EVENT_REQ,
+  TOGGLE_EVENT_RES,
+} from "../../shares/constants";
+import { Question as TQuestion } from "../../shares/types";
 import Header from "../components/Header";
 import Question from "../components/Question";
+
+const Container = styled.div`
+  height: 100%;
+`;
+
+const Content = styled.div`
+  background-color: #ecf0f1;
+  height: calc(100% - 64px);
+`;
+
+const QuestionContainer = styled.div`
+  box-sizing: border-box;
+
+  padding: 24px;
+  margin-top: auto;
+  max-height: 100%;
+  overflow: auto;
+`;
 
 function Home() {
   const [working, setWorking] = useState(false);
   const [serverOn, setServerOn] = useState(false);
+  const [questions, setQuestions] = useState<TQuestion[]>([]);
+  const questionContainerRef = useRef<HTMLDivElement>(null);
 
   const handleServerToggle = () => {
     ipcRenderer.send(TOGGLE_EVENT_REQ, !serverOn);
     setWorking(true);
+  };
+
+  const scrollToBottom = () => {
+    if (!questionContainerRef.current) return;
+
+    questionContainerRef.current.scrollTo({
+      top: questionContainerRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   };
 
   useEffect(() => {
@@ -21,10 +55,18 @@ function Home() {
       setServerOn((prev) => !prev);
       setWorking(false);
     });
+
+    ipcRenderer.on(SEND_QUESTION, (_, question: TQuestion) => {
+      setQuestions((prevQuestions) => prevQuestions.concat(question));
+    });
   }, []);
 
+  useEffect(() => {
+    scrollToBottom();
+  }, [questions]);
+
   return (
-    <React.Fragment>
+    <Container>
       <Head>
         <title>Anonymous Question</title>
       </Head>
@@ -33,25 +75,14 @@ function Home() {
         onServerToggle={handleServerToggle}
         serverOnDisabled={working}
       />
-      <Layout.Content
-        style={{
-          padding: 24,
-          backgroundColor: "#ecf0f1",
-          height: "calc(100vh - 64px)",
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "flex-end",
-        }}
-      >
-        <Question nickname="Q" question="question" />
-        <Question
-          nickname="K"
-          question="question 2question 2question 2question 2question 2question 2question 2question 2question 2question 2question 2question 2question 2question 2question 2"
-        />
-        <Question nickname="Q" question="question 3" />
-      </Layout.Content>
-    </React.Fragment>
+      <Content>
+        <QuestionContainer ref={questionContainerRef}>
+          {questions.map((q, qIdx) => (
+            <Question key={qIdx} {...q} />
+          ))}
+        </QuestionContainer>
+      </Content>
+    </Container>
   );
 }
 

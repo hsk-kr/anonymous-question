@@ -4,14 +4,27 @@ import { default as dotenv } from "dotenv";
 import cors from "cors";
 import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
+import { networkInterfaces } from "os";
 
-import { ServerInfo } from "../../types/types";
-import { TOGGLE_EVENT_REQ, TOGGLE_EVENT_RES } from "../../types/constants";
+import { ServerInfo } from "../../shares/types";
+import { TOGGLE_EVENT_REQ, TOGGLE_EVENT_RES } from "../../shares/constants";
 import questionApi from "./questions";
 
 let serverInfo: ServerInfo | undefined;
 
 dotenv.config();
+
+const nets = networkInterfaces();
+const addressList: string[] = [];
+
+for (const value of Object.values(nets)) {
+  for (const net of value) {
+    if (net.family === "IPv4" && !net.internal) {
+      addressList.push(net.address);
+      break;
+    }
+  }
+}
 
 const options = {
   definition: {
@@ -30,13 +43,11 @@ const options = {
         email: "hsk.coder@gmail.com",
       },
     },
-    servers: [
-      {
-        url: `http://localhost:${process.env.SERVER_PORT}/questions`,
-      },
-    ],
+    servers: addressList.map((address) => ({
+      url: `http://${address}:${process.env.SERVER_PORT}`,
+    })),
   },
-  apis: ["./questions.ts", "./schemas/*.ts"],
+  apis: ["./main/api/questions.ts", "./main/api/schemas/*.ts"],
 };
 
 const specs = swaggerJsdoc(options);
@@ -81,12 +92,7 @@ const configureServer = (app: Express) => {
   app.use(express.json());
   app.use(cors());
 
-  app.use(
-    "/api-docs",
-    swaggerUi.serve,
-    swaggerUi.setup(specs, { explorer: true })
-  );
-
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
   app.use("/api", questionApi);
 };
 

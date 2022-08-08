@@ -15,9 +15,12 @@ if (isProd) {
   await app.whenReady();
 
   const mainWindow = createWindow("main", {
-    width: 1000,
+    width: 800,
     height: 600,
+    alwaysOnTop: true,
   });
+
+  mainWindow.setMenu(null);
 
   if (isProd) {
     await mainWindow.loadURL("app://./main.html");

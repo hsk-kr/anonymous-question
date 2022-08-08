@@ -1,3 +1,13 @@
+import express, { Request } from "express";
+import { Question } from "../../shares/types";
+import { sendQuestionMessage } from "./ipc";
+
+const router = express.Router();
+
+interface QuestionParams extends Request {
+  body: Question;
+}
+
 /**
  * @swagger
  * tags:
@@ -14,27 +24,39 @@
  *      content:
  *        application/json:
  *          schema:
- *            $ref: './schemas/question.ts'
+ *            $ref:  '#/components/schemas/Question'
  *    responses:
  *      "200":
  *        description: Succeed to request a question
  *        content:
  *          application/json:
  *            schema:
- *              $ref: './schemas/quesiton.ts'
+ *              $ref: '#/components/schemas/Question'
  */
-import express from "express";
-
-const router = express.Router();
-
-router.post("/questions", (req, res) => {
-  if (!req.body.question) {
+router.post("/questions", (req: QuestionParams, res) => {
+  if (!req.body.nickname && !req.body.question) {
     return res.status(400).send("Bad Request");
   }
 
-  const question = req.body.question;
+  const question = req.body.question.trim();
+  const nickname = req.body.nickname.trim();
 
-  res.send("ok " + question);
+  if (nickname.length >= 2) {
+    return res
+      .status(400)
+      .send("Length of the nickname must be less than or equal to 2.");
+  } else if (question.length >= 100) {
+    return res
+      .status(400)
+      .send("Length of the quesztion must be less than or equal to 100.");
+  }
+
+  sendQuestionMessage(nickname, question);
+
+  return res.json({
+    question,
+    nickname,
+  });
 });
 
 export default router;
