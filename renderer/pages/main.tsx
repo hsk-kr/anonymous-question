@@ -30,13 +30,15 @@ const QuestionContainer = styled.div`
   overflow: auto;
 `;
 
-function Home() {
+function Main() {
   const [working, setWorking] = useState(false);
+  const [port, setPort] = useState("");
   const [serverOn, setServerOn] = useState(false);
   const [questions, setQuestions] = useState<TQuestion[]>([]);
   const questionContainerRef = useRef<HTMLDivElement>(null);
 
   const handleServerToggle = () => {
+    setPort("");
     ipcRenderer.send(TOGGLE_EVENT_REQ, !serverOn);
     setWorking(true);
   };
@@ -51,10 +53,16 @@ function Home() {
   };
 
   useEffect(() => {
-    ipcRenderer.on(TOGGLE_EVENT_RES, () => {
-      setServerOn((prev) => !prev);
-      setWorking(false);
-    });
+    ipcRenderer.on(
+      TOGGLE_EVENT_RES,
+      (_, { result, port }: { result: boolean; port?: string }) => {
+        if (!result) return;
+        if (port) setPort(port);
+
+        setServerOn((prev) => !prev);
+        setWorking(false);
+      }
+    );
 
     ipcRenderer.on(SEND_QUESTION, (_, question: TQuestion) => {
       setQuestions((prevQuestions) => prevQuestions.concat(question));
@@ -71,6 +79,7 @@ function Home() {
         <title>Anonymous Question</title>
       </Head>
       <Header
+        port={port}
         serverOn={serverOn}
         onServerToggle={handleServerToggle}
         serverOnDisabled={working}
@@ -86,4 +95,4 @@ function Home() {
   );
 }
 
-export default Home;
+export default Main;

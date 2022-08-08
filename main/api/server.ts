@@ -69,14 +69,16 @@ ipcMain.on(TOGGLE_EVENT_REQ, async (event, on) => {
     return;
   }
 
+  let port: string | undefined;
+
   try {
     if (on) {
-      await startServer();
+      port = await startServer();
     } else {
       await stopServer();
     }
 
-    event.reply(TOGGLE_EVENT_RES, { result: true, message: "Succeed." });
+    event.reply(TOGGLE_EVENT_RES, { result: true, message: "Succeed.", port });
   } catch (e) {
     console.error(e);
     event.reply(TOGGLE_EVENT_RES, {
@@ -96,7 +98,7 @@ const configureServer = (app: Express) => {
   app.use("/api", questionApi);
 };
 
-export const startServer = (): Promise<void> => {
+export const startServer = (): Promise<string> => {
   return new Promise((resolve, reject) => {
     const app = express();
     const port = process.env.SERVER_PORT;
@@ -104,9 +106,10 @@ export const startServer = (): Promise<void> => {
     configureServer(app);
 
     const server = app
-      .listen(port, () => {
-        console.log("Server has been started.");
-        resolve();
+      .listen(undefined, () => {
+        const port = (server.address() as { port: number }).port.toString();
+        console.log(`Server has been started on ${port}.`);
+        resolve(port);
       })
       .on("error", (err) => {
         reject(err);
